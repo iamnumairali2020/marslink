@@ -216,6 +216,6 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 # Optional: Serve frontend static files if frontend folder is present
-frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend"))
+frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
 if os.path.exists(frontend_dir):
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
