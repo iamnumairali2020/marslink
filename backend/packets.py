@@ -5,9 +5,7 @@ from typing import Dict, Any
 
 def compute_crc(packet: Dict[str, Any]) -> int:
     """
-    Computes a deterministic CRC32 checksum for a packet dictionary.
-    Excludes the 'crc' field, serializes to JSON with sorted keys and 
-    tight separators, and returns an unsigned 32-bit integer.
+    This function finds a CRC32 checksum
     """
     # Exclude 'crc' to avoid circular dependency during calculation
     packet_copy = {k: v for k, v in packet.items() if k != 'crc'}
