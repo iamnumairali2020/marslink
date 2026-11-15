@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARES-1 MarsLink Mission Control</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Mission Status Bar -->
+    <header class="top-bar">
+        <div class="logo-area">
+            <h1>ARES-1 MarsLink</h1>
+            <span id="connection-badge" class="badge connecting">CONNECTING...</span>
+        </div>
+        <div class="telemetry-summary">
+            <div class="metric">
+                <span class="label">Distance:</span>
+                <span id="top-au" class="value">-- AU</span>
+                <span id="top-au-source" class="source-tag">(--)</span>
+            </div>
+            <div class="metric">
+                <span class="label">Real Delay:</span>
+                <span id="top-real-delay" class="value">-- s</span>
+            </div>
+            <div class="metric">
+                <span class="label">Demo Delay:</span>
+                <span id="top-demo-delay" class="value">-- s</span>
+            </div>
+            <div class="metric">
+                <span class="label">Link Status:</span>
+                <span id="top-link-status" class="value status-up">UP</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- Left Column: Crew Cards & Controls -->
+        <section class="column left-column">
+            <h2>Crew Telemetry Vitals</h2>
+            <div class="crew-cards-grid" id="crew-cards-container">
+                <!-- Dynamically populated crew cards for C1, C2, C3, C4 -->
+            </div>
+
+            <div class="panel controls-panel">
+                <h2>Live Demo Controls</h2>
+                <div class="control-group">
+                    <label for="blackout-toggle">
+                        <input type="checkbox" id="blackout-toggle"> Deep Space Blackout
+                    </label>
+                </div>
+                <div class="control-group">
+                    <label for="corruption-slider">
+                        Fault Corruption Rate: <span id="corruption-val">5</span>%
+                    </label>
+                    <input type="range" id="corruption-slider" min="0" max="100" value="5" step="1">
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Link Health, Radiation, & Event Log -->
+        <section class="column right-column">
+            <!-- Link Health Panel -->
+            <div class="panel">
+                <h2>Deep Space Link Health</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-val" id="stat-received">0</span>
+                        <span class="stat-lbl">Received</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val" id="stat-corrupted">0</span>
+                        <span class="stat-lbl">Corrupted (CRC)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val" id="stat-missing">0</span>
+                        <span class="stat-lbl">Missing (Gaps)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val" id="stat-recovered">0</span>
+                        <span class="stat-lbl">Recovered (Resend)</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-val" id="stat-lost">0</span>
+                        <span class="stat-lbl">Lost (Timeout)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radiation Panel -->
+            <div class="panel" id="radiation-panel">
+                <h2>NOAA Space Weather (Solar Radiation)</h2>
+                <div class="radiation-content">
+                    <div class="metric-large">
+                        <span class="label">Proton Flux (≥10 MeV):</span>
+                        <span id="flux-value" class="value">-- pfu</span>
+                        <span id="flux-source" class="source-tag">(--)</span>
+                    </div>
+                    <div id="storm-warning" class="warning-banner hidden">
+                        ⚠️ S1 SOLAR RADIATION STORM WARNING (≥10 pfu) - ELEVATED RADIATION DOSE RATE ACTIVE
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Log Panel -->
+            <div class="panel event-panel">
+                <h2>Mission Event Log</h2>
+                <div class="event-log-container" id="event-log">
+                    <div class="event-item">Initializing mission telemetry feed...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
