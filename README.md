@@ -1,10 +1,10 @@
-# 🚀 ARES-1 MarsLink: Deep-Space Telemetry & Mission Control Simulation
+# ARES-1 MarsLink: Deep-Space Telemetry & Mission Control Simulation
 
 **MarsLink** is an end-to-end mission control web application that simulates the real-world networking challenges of interplanetary communication between Earth and Mars. Built with **FastAPI**, **WebSockets**, **SQLite**, and a vanilla **HTML/CSS/JS** dashboard, it demonstrates how spacecraft telemetry survives massive light-speed delays, data corruption, packet loss, and solar blackouts.
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 * **Real-Time Planetary Physics & Live APIs:**
   * **NASA JPL Horizons Integration:** Fetches the live, real-time astronomical distance (in AU) between Earth and Mars to calculate accurate one-way light-speed delays (~11–15 minutes), compressed via a configurable `60x` demo time-scale factor.
@@ -24,7 +24,7 @@
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```text
 marslink/
@@ -47,7 +47,7 @@ marslink/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Prerequisites
 * Python 3.9 or higher
@@ -77,13 +77,13 @@ uvicorn marslink.backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Once the server starts, open your browser and navigate to:
-👉 **`http://127.0.0.1:8000`**
+**`http://127.0.0.1:8000`**
 
 *(Note: Allow ~10–15 seconds after initial startup for the first simulated telemetry packets to traverse the deep-space light delay queue and appear on the dashboard.)*
 
 ---
 
-## 🎮 Live Demo Walkthrough
+## Live Demo Walkthrough
 
 1. **Observe Normal Operations:**
    * Verify the top bar shows live AU distance from NASA JPL Horizons and live solar proton flux from NOAA.
@@ -98,7 +98,7 @@ Once the server starts, open your browser and navigate to:
 
 ---
 
-## 📡 API & WebSocket Reference
+## API & WebSocket Reference
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
