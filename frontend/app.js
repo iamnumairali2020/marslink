@@ -2,6 +2,7 @@
 
 const CREW_IDS = ["C1", "C2", "C3", "C4"];
 const latestCrewData = {};
+const SIGNAL_STALE_SECONDS = 30;
 
 // DOM Elements
 const connectionBadge = document.getElementById("connection-badge");
@@ -105,6 +106,46 @@ function handleMessage(data) {
         statLost.textContent = data.stats.lost || 0;
     }
 
+    // <--- ADD THIS BLOCK TO UPDATE CREW CARDS WHEN A PACKET ARRIVES --->
+    if (data.packet) {
+        const pkt = data.packet;
+        const crewId = pkt.crew_id;
+        const hr = document.getElementById(`hr-${crewId}`);
+        const spo2 = document.getElementById(`spo2-${crewId}`);
+        const dose = document.getElementById(`dose-${crewId}`);
+        const card = document.getElementById(`crew-card-${crewId}`);
+        const signalTag = document.getElementById(`signal-${crewId}`);
+        const ageTag = document.getElementById(`age-${crewId}`);
+
+        if (hr && spo2 && dose && card && signalTag && ageTag) {
+            hr.textContent = pkt.hr;
+            spo2.textContent = pkt.spo2;
+            dose.textContent = pkt.dose_msv;
+            latestCrewData[crewId] = pkt;
+            card.className = "crew-card live";
+            signalTag.textContent = "LIVE";
+
+            const age = Math.max(0, (Date.now() / 1000) - pkt.ts).toFixed(1);
+            ageTag.textContent = `Data as of ${age}s ago`;
+        }
+    }
+
+    if (data.type === "init") {
+        // Recover each crew member's latest vitals when the dashboard reconnects
+        // or is opened after telemetry has already started.
+        CREW_IDS.forEach(crewId => {
+            fetch(`/history/${crewId}?limit=1`)
+                .then(response => response.ok ? response.json() : Promise.reject(response.status))
+                .then(history => {
+                    const pkt = history.packets && history.packets[0];
+                    if (pkt && !latestCrewData[crewId]) {
+                        handleMessage({ packet: pkt });
+                    }
+                })
+                .catch(error => console.error(`Failed to load ${crewId} telemetry history:`, error));
+        });
+    }
+
     if (data.link) {
         topAu.textContent = `${data.link.au.toFixed(3)} AU`;
         topAuSource.textContent = `(${data.link.au_source})`;
@@ -132,18 +173,26 @@ function handleMessage(data) {
             stormWarning.classList.add("hidden");
         }
     }
-
-    // If packet payload is present in telemetry update
-    if (data.crew_id) {
-        latestCrewData[data.crew_id] = data;
-    }
 }
 
 // Periodic ticker to recalculate data age and signal health on crew cards
 setInterval(() => {
     const now = Date.now() / 1000;
-    // We fetch recent history or read from cache if needed. For real-time updates via WebSocket, 
-    // we can also catch packets if broadcasted. Let's ensure broadcast sends packet data or we fetch history.
+    CREW_IDS.forEach(crewId => {
+        const pkt = latestCrewData[crewId];
+        if (!pkt) return;
+
+        const age = Math.max(0, now - pkt.ts);
+        const card = document.getElementById(`crew-card-${crewId}`);
+        const signalTag = document.getElementById(`signal-${crewId}`);
+        const ageTag = document.getElementById(`age-${crewId}`);
+        if (!card || !signalTag || !ageTag) return;
+
+        ageTag.textContent = `Data as of ${age.toFixed(1)}s ago`;
+        const stale = age > SIGNAL_STALE_SECONDS;
+        card.className = `crew-card ${stale ? "nosignal" : "live"}`;
+        signalTag.textContent = stale ? "NO SIGNAL" : "LIVE";
+    });
 }, 1000);
 
 // Add event to scrolling event log

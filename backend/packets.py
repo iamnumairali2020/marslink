@@ -11,7 +11,9 @@ def compute_crc(packet: Dict[str, Any]) -> int:
     Using the zlib, it calls the built in crc32 function, that calculates the checksum.
     """
     
-    packet_copy = {k: v for k, v in packet.items() if k != 'crc'}
+    # ``resent`` is transport metadata added after the original packet is
+    # created; it must not invalidate the packet's payload checksum.
+    packet_copy = {k: v for k, v in packet.items() if k not in {'crc', 'resent'}}
     
     
     

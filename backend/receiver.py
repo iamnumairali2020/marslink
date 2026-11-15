@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Dict, Any, List, Optional, Callable
 from marslink.backend import packets
@@ -61,8 +62,10 @@ class GroundReceiver:
             db.insert_event(time.time(), "corrupted", crew_id, f"Packet seq {seq} failed CRC check.")
             
             # Count corrupted sequence as missing/needing resend if valid structure
-            if crew_id in self.highest_seq and seq > self.highest_seq[crew_id]:
+            if seq > self.highest_seq[crew_id] and seq not in self.pending_missing[crew_id]:
                 self._track_missing(crew_id, seq)
+                if self.link:
+                    await self.link.enqueue_ground_to_space(crew_id, [seq])
             
             await self._push_update()
             return
@@ -145,7 +148,7 @@ class GroundReceiver:
         if dose > 5.0:
             db.insert_event(received_at, "alert", crew_id, f"HIGH RADIATION DOSE: {dose} mSv")
 
-        await self._push_update()
+        await self._push_update(packet)
 
     def _track_missing(self, crew_id: str, seq: int):
         """Tracks a missing sequence number and initializes or increments its retry count."""
@@ -184,12 +187,13 @@ class GroundReceiver:
         else:
             return "NO SIGNAL"
 
-    async def _push_update(self):
-        """Triggers dashboard WebSocket broadcast if callback is registered."""
+    async def _push_update(self, packet: Optional[Dict[str, Any]] = None):
+        """Triggers dashboard WebSocket broadcast with link stats and packet telemetry."""
         if self.broadcast_callback:
             data = {
                 "type": "telemetry_update",
-                "stats": self.stats
+                "stats": self.stats,
+                "packet": packet  # <--- Sends the crew vitals to the dashboard frontend
             }
             if asyncio.iscoroutinefunction(self.broadcast_callback):
                 await self.broadcast_callback(data)

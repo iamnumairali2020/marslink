@@ -80,16 +80,6 @@ class SpacecraftSimulator:
             dose_msv=round(state["dose_msv"], 4)
         )
 
-        # Fault Injection: Corruption (mutate a value AFTER CRC is computed so checksum fails)
-        if random.random() < self.corrupt_rate:
-            target_field = random.choice(["hr", "spo2", "dose_msv"])
-            if target_field == "spo2":
-                packet[target_field] = round(packet[target_field] + random.uniform(5.0, 15.0), 1)
-            elif target_field == "hr":
-                packet[target_field] = round(packet[target_field] + random.uniform(30.0, 60.0), 1)
-            else:
-                packet[target_field] = round(packet[target_field] + 5.0, 4)
-
         return packet
 
     def handle_resend_request(self, crew_id: str, requested_seqs: List[int]) -> List[Dict[str, Any]]:
@@ -104,7 +94,7 @@ class SpacecraftSimulator:
                 resent_packets.append(pkt)
         return resent_packets
 
-    def send_to_link(self, packet: Dict[str, Any]):
+    async def send_to_link(self, packet: Dict[str, Any]):
         """Handles drop rates, resend buffers, and store-and-forward during blackouts."""
         # Check drop rate fault injection
         if random.random() < self.drop_rate:
@@ -120,22 +110,40 @@ class SpacecraftSimulator:
             oldest_seq = min(buf.keys())
             del buf[oldest_seq]
 
+        # Corrupt only the transmitted copy. Keep the resend buffer pristine so
+        # a CRC failure can be recovered with the original valid packet.
+        transmission_packet = packet.copy()
+        if random.random() < self.corrupt_rate:
+            target_field = random.choice(["hr", "spo2", "dose_msv"])
+            if target_field == "spo2":
+                transmission_packet[target_field] = round(
+                    transmission_packet[target_field] + random.uniform(5.0, 15.0), 1
+                )
+            elif target_field == "hr":
+                transmission_packet[target_field] = round(
+                    transmission_packet[target_field] + random.uniform(30.0, 60.0), 1
+                )
+            else:
+                transmission_packet[target_field] = round(
+                    transmission_packet[target_field] + 5.0, 4
+                )
+
         if self.is_blackout:
             # Store and forward: queue in outbox during blackout
-            self.outbox.append(packet)
+            self.outbox.append(transmission_packet)
         else:
             # If coming out of blackout with pending outbox items, flush them first in order
             if self.outbox and self.link_enqueue_callback:
                 flush_batch = self.outbox.copy()
                 self.outbox.clear()
                 for p in flush_batch:
-                    self.link_enqueue_callback(p)
+                    await self.link_enqueue_callback(p)
             
             # Send current packet to link queue
             if self.link_enqueue_callback:
-                self.link_enqueue_callback(packet)
+                await self.link_enqueue_callback(transmission_packet)
 
-    def set_blackout(self, blackout: bool):
+    async def set_blackout(self, blackout: bool):
         """Toggles the blackout state and flushes the outbox when connectivity is restored."""
         was_blackout = self.is_blackout
         self.is_blackout = blackout
@@ -143,12 +151,12 @@ class SpacecraftSimulator:
             flush_batch = self.outbox.copy()
             self.outbox.clear()
             for p in flush_batch:
-                self.link_enqueue_callback(p)
+                await self.link_enqueue_callback(p)
 
     async def run_loop(self):
         """Main spacecraft simulation loop running every 1 second (demo time)."""
         while True:
             for crew_id in self.crew_ids:
                 packet = self.generate_packet(crew_id)
-                self.send_to_link(packet)
+                await self.send_to_link(packet)
             await asyncio.sleep(1.0)

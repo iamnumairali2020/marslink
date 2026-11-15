@@ -122,7 +122,7 @@ class ControlPayload(BaseModel):
 async def control_simulation(payload: ControlPayload):
     """Control endpoint to modify simulation parameters live during the demo."""
     if payload.blackout is not None:
-        sim_instance.set_blackout(payload.blackout)
+        await sim_instance.set_blackout(payload.blackout)
         db.insert_event(asyncio.get_event_loop().time(), "blackout", None, f"Blackout state changed to: {payload.blackout}")
         
     if payload.corrupt_rate is not None:
