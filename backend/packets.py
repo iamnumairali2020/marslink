@@ -5,22 +5,30 @@ from typing import Dict, Any
 
 def compute_crc(packet: Dict[str, Any]) -> int:
     """
-    This function finds a CRC32 checksum
+    This function finds a CRC32 (cyclic redundancy check) checksum. 
+    It calls the packet, and removes the crc to avoid circular dependency
+    Converts the python dictionary to json and sorts it
+    Using the zlib, it calls the built in crc32 function, that calculates the checksum.
     """
-    # Exclude 'crc' to avoid circular dependency during calculation
+    
     packet_copy = {k: v for k, v in packet.items() if k != 'crc'}
     
-    # sort_keys=True ensures field ordering never changes the checksum.
-    # separators removes whitespace padding differences.
+    
+    
     serialized = json.dumps(packet_copy, sort_keys=True, separators=(',', ':'))
     
-    # Compute CRC32 and mask with 0xFFFFFFFF to guarantee an unsigned 32-bit int
+    
     return zlib.crc32(serialized.encode('utf-8')) & 0xFFFFFFFF
 
 def verify_crc(packet: Dict[str, Any]) -> bool:
     """
-    Validates the packet integrity by comparing its embedded CRC 
-    against a freshly computed CRC of its contents.
+    Checks if a data packet has been corrupted/changed in any way
+    Verifies the checksum, whereas the previous function solves the checksum
+    Compares the received CRC with the computed CRC
+    If nothing to compare to, it automatically returns false
+    Calls the recieved CRC and the solved CRC
+    Returns True if they equal each other
+    
     """
     if 'crc' not in packet:
         return False
@@ -39,7 +47,10 @@ def make_packet(
     ts: float = None
 ) -> Dict[str, Any]:
     """
-    Constructs a standardized telemetry packet dictionary and appends its CRC32 checksum.
+    Makes a standard telemetry packet containing all the parameters, like mission ID
+    If a timestamp isn't given, it makes one automatically using the time.time() method which returns the elapsed time in seconds since Unix Epoch (Jan 1, 1970)
+    It then calls the compute_crc function, and attaches the crc value to the created dictionary
+    Finally, it returns the completed telemetry packet
     """
     if ts is None:
         ts = time.time()
